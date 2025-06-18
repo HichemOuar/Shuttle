@@ -96,7 +96,9 @@ public final class CustomCollapsingTextHelper {
     private Interpolator mPositionInterpolator;
     private Interpolator mTextSizeInterpolator;
 
-    private float mCollapsedShadowRadius, mCollapsedShadowDx, mCollapsedShadowDy;
+    private float mCollapsedShadowRadius;
+    private float mCollapsedShadowDx;
+    private float mCollapsedShadowDy;
     private int mCollapsedShadowColor;
 
     private float mExpandedShadowRadius, mExpandedShadowDx, mExpandedShadowDy;
@@ -544,45 +546,22 @@ public final class CustomCollapsingTextHelper {
             float x = mCurrentDrawX;
             float y = mCurrentDrawY;
             float subY = mCurrentSubY;
-            final boolean drawTexture = mUseTexture && mExpandedTitleTexture != null;
-
-            final float ascent;
-            final float descent;
-            if (drawTexture) {
-                ascent = mTextureAscent * mScale;
-                descent = mTextureDescent * mScale;
-            } else {
-                ascent = mTitlePaint.ascent() * mScale;
-                descent = mTitlePaint.descent() * mScale;
-            }
+            boolean drawTexture = mUseTexture && mExpandedTitleTexture != null;
 
             if (DEBUG_DRAW) {
-                // Just a debug tool, which drawn a magenta rect in the text bounds
-                canvas.drawRect(mCurrentBounds.left, y + ascent, mCurrentBounds.right, y + descent,
-                        DEBUG_DRAW_PAINT);
+                drawDebugRect(canvas, y);
             }
 
-            if (drawTexture) {
-                y += ascent;
-            }
-
-            //region modification
-            final int saveCountSub = canvas.save();
             if (mSub != null) {
-                if (mSubScale != 1f) {
-                    canvas.scale(mSubScale, mSubScale, x, subY);
-                }
-                canvas.drawText(mSub, 0, mSub.length(), x, subY, mSubPaint);
-                canvas.restoreToCount(saveCountSub);
+                drawSubtitle(canvas, x, subY);
             }
-            //endregion
 
             if (mScale != 1f) {
                 canvas.scale(mScale, mScale, x, y);
             }
 
             if (drawTexture) {
-                // If we should use a texture, draw it instead of text
+                y += mTextureAscent * mScale;
                 canvas.drawBitmap(mExpandedTitleTexture, x, y, mTexturePaint);
             } else {
                 canvas.drawText(mTextToDraw, 0, mTextToDraw.length(), x, y, mTitlePaint);
@@ -591,6 +570,22 @@ public final class CustomCollapsingTextHelper {
 
         canvas.restoreToCount(saveCount);
     }
+
+    private void drawDebugRect(Canvas canvas, float y) {
+        float ascent = mUseTexture ? mTextureAscent * mScale : mTitlePaint.ascent() * mScale;
+        float descent = mUseTexture ? mTextureDescent * mScale : mTitlePaint.descent() * mScale;
+        canvas.drawRect(mCurrentBounds.left, y + ascent, mCurrentBounds.right, y + descent, DEBUG_DRAW_PAINT);
+    }
+
+    private void drawSubtitle(Canvas canvas, float x, float y) {
+        int saveCountSub = canvas.save();
+        if (mSubScale != 1f) {
+            canvas.scale(mSubScale, mSubScale, x, y);
+        }
+        canvas.drawText(mSub, 0, mSub.length(), x, y, mSubPaint);
+        canvas.restoreToCount(saveCountSub);
+    }
+
 
     private boolean calculateIsRtl(CharSequence text) {
         final boolean defaultIsRtl = ViewCompat.getLayoutDirection(mView)

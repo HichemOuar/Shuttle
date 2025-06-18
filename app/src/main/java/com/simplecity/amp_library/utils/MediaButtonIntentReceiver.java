@@ -59,89 +59,96 @@ public class MediaButtonIntentReceiver extends DaggerBroadcastReceiver {
     public static void handleIntent(Context context, Intent intent, PlaybackSettingsManager playbackSettingsManager) {
         String intentAction = intent.getAction();
 
-        if (AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(intentAction) && playbackSettingsManager.getPauseOnHeadsetDisconnect()) {
+        if (AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(intentAction) &&
+                playbackSettingsManager.getPauseOnHeadsetDisconnect()) {
             startService(context, MediaButtonCommand.PAUSE);
-        } else if (Intent.ACTION_MEDIA_BUTTON.equals(intentAction)) {
+            return;
+        }
+
+        if (Intent.ACTION_MEDIA_BUTTON.equals(intentAction)) {
             KeyEvent event = intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
-            if (event == null) {
-                return;
-            }
+            if (event == null) return;
 
-            int keyCode = event.getKeyCode();
-            int action = event.getAction();
-            long eventTime = event.getEventTime();
-
-            String command = null;
-            switch (keyCode) {
-                case KeyEvent.KEYCODE_MEDIA_STOP:
-                    command = MediaButtonCommand.STOP;
-                    break;
-                case KeyEvent.KEYCODE_HEADSETHOOK:
-                case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
-                    command = MediaButtonCommand.TOGGLE_PAUSE;
-                    break;
-                case KeyEvent.KEYCODE_MEDIA_NEXT:
-                    command = MediaButtonCommand.NEXT;
-                    break;
-                case KeyEvent.KEYCODE_MEDIA_PREVIOUS:
-                    command = MediaButtonCommand.PREVIOUS;
-                    break;
-                case KeyEvent.KEYCODE_MEDIA_PAUSE:
-                    command = MediaButtonCommand.PAUSE;
-                    break;
-                case KeyEvent.KEYCODE_MEDIA_PLAY:
-                    command = MediaButtonCommand.PLAY;
-                    break;
-            }
-
-            if (command != null) {
-                if (action == KeyEvent.ACTION_DOWN) {
-                    if (down) {
-                        if ((MediaButtonCommand.TOGGLE_PAUSE.equals(command) ||
-                                MediaButtonCommand.PLAY.equals(command))) {
-                            if (lastClickTime != 0 && eventTime - lastClickTime > LONG_PRESS_DELAY) {
-                                acquireWakeLockAndSendMessage(context, mediaButtonMessageHander.obtainMessage(MSG_LONGPRESS_TIMEOUT, context), 0);
-                            }
-                        }
-                    } else if (event.getRepeatCount() == 0) {
-                        // Only consider the first event in a sequence, not the repeat events,
-                        // so that we don't trigger in cases where the first event went to a
-                        // different app (e.g. when the user ends a phone call by long pressing
-                        // the headset button)
-
-                        // The service may or may not be running, but we need to send it a command
-                        if (keyCode == KeyEvent.KEYCODE_HEADSETHOOK) {
-                            if (eventTime - lastClickTime >= DOUBLE_CLICK) {
-                                clickCounter = 0;
-                            }
-
-                            clickCounter++;
-
-                            mediaButtonMessageHander.removeMessages(MSG_HEADSET_DOUBLE_CLICK_TIMEOUT);
-
-                            Message msg = mediaButtonMessageHander.obtainMessage(MSG_HEADSET_DOUBLE_CLICK_TIMEOUT, clickCounter, 0, context);
-
-                            long delay = clickCounter < 3 ? DOUBLE_CLICK : 0;
-                            if (clickCounter >= 3) {
-                                clickCounter = 0;
-                            }
-                            lastClickTime = eventTime;
-                            acquireWakeLockAndSendMessage(context, msg, delay);
-                        } else {
-                            startService(context, command);
-                        }
-                        launched = false;
-                        down = true;
-                    }
-                } else {
-                    mediaButtonMessageHander.removeMessages(MSG_LONGPRESS_TIMEOUT);
-                    down = false;
-                }
-
-                releaseWakeLockIfHandlerIdle();
-            }
+            handleMediaButtonEvent(context, event);
         }
     }
+
+    private static void handleMediaButtonEvent(Context context, KeyEvent event) {
+        int keyCode = event.getKeyCode();
+        int action = event.getAction();
+        long eventTime = event.getEventTime();
+
+        String command = resolveMediaCommand(keyCode);
+
+        if (command == null) return;
+
+        if (action == KeyEvent.ACTION_DOWN) {
+            if (down) {
+                handleLongPressIfNeeded(context, command, eventTime);
+            } else if (event.getRepeatCount() == 0) {
+                handleFirstPress(context, command, keyCode, eventTime);
+            }
+        } else {
+            mediaButtonMessageHander.removeMessages(MSG_LONGPRESS_TIMEOUT);
+            down = false;
+        }
+
+        releaseWakeLockIfHandlerIdle();
+    }
+
+    private static String resolveMediaCommand(int keyCode) {
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_MEDIA_STOP:
+                return MediaButtonCommand.STOP;
+            case KeyEvent.KEYCODE_HEADSETHOOK:
+            case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
+                return MediaButtonCommand.TOGGLE_PAUSE;
+            case KeyEvent.KEYCODE_MEDIA_NEXT:
+                return MediaButtonCommand.NEXT;
+            case KeyEvent.KEYCODE_MEDIA_PREVIOUS:
+                return MediaButtonCommand.PREVIOUS;
+            case KeyEvent.KEYCODE_MEDIA_PAUSE:
+                return MediaButtonCommand.PAUSE;
+            case KeyEvent.KEYCODE_MEDIA_PLAY:
+                return MediaButtonCommand.PLAY;
+            default:
+                return null;
+        }
+    }
+
+    private static void handleLongPressIfNeeded(Context context, String command, long eventTime) {
+        if ((MediaButtonCommand.TOGGLE_PAUSE.equals(command) || MediaButtonCommand.PLAY.equals(command)) &&
+                lastClickTime != 0 && eventTime - lastClickTime > LONG_PRESS_DELAY) {
+            acquireWakeLockAndSendMessage(context, mediaButtonMessageHander.obtainMessage(MSG_LONGPRESS_TIMEOUT, context), 0);
+        }
+    }
+
+    private static void handleFirstPress(Context context, String command, int keyCode, long eventTime) {
+        if (keyCode == KeyEvent.KEYCODE_HEADSETHOOK) {
+            if (eventTime - lastClickTime >= DOUBLE_CLICK) {
+                clickCounter = 0;
+            }
+
+            clickCounter++;
+            mediaButtonMessageHander.removeMessages(MSG_HEADSET_DOUBLE_CLICK_TIMEOUT);
+
+            Message msg = mediaButtonMessageHander.obtainMessage(MSG_HEADSET_DOUBLE_CLICK_TIMEOUT, clickCounter, 0, context);
+            long delay = clickCounter < 3 ? DOUBLE_CLICK : 0;
+
+            if (clickCounter >= 3) {
+                clickCounter = 0;
+            }
+
+            lastClickTime = eventTime;
+            acquireWakeLockAndSendMessage(context, msg, delay);
+        } else {
+            startService(context, command);
+        }
+
+        launched = false;
+        down = true;
+    }
+
 
     static void beep(Context context) {
         if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean("pref_headset_beep", true)) {

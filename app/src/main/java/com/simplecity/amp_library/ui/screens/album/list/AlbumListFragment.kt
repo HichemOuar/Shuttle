@@ -19,7 +19,7 @@ import com.simplecity.amp_library.model.Album
 import com.simplecity.amp_library.model.Playlist
 import com.simplecity.amp_library.model.Song
 import com.simplecity.amp_library.playback.QueueManager
-import com.simplecity.amp_library.ui.adapters.SectionedAdapter
+import com.simplecity.amp_library.ui.adapters.SectionedViewModelAdapter
 import com.simplecity.amp_library.ui.adapters.ViewType
 import com.simplecity.amp_library.ui.common.BaseFragment
 import com.simplecity.amp_library.ui.dialog.AlbumBiographyDialog

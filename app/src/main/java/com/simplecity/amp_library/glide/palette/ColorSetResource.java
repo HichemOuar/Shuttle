@@ -23,5 +23,7 @@ public class ColorSetResource implements Resource<ColorSet> {
     @Override
     public void recycle() {
 
+        // Nothing to recycle because ColorSet does not hold onto large resources.
+
     }
 }

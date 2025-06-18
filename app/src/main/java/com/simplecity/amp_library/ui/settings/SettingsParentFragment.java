@@ -50,8 +50,8 @@ public class SettingsParentFragment extends BaseNavigationController implements
         DrawerLockManager.DrawerLock,
         MiniPlayerLockManager.MiniPlayerLock {
 
-    public static String ARG_PREFERENCE_RESOURCE = "preference_resource";
-    public static String ARG_TITLE = "title";
+    public static final ARG_PREFERENCE_RESOURCE = "preference_resource";
+    public static final ARG_TITLE = "title";
 
     @BindView(R.id.toolbar)
     Toolbar toolbar;

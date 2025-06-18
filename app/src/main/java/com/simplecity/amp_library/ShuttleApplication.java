@@ -70,11 +70,26 @@ public class ShuttleApplication extends DaggerApplication {
 
     private static final String TAG = "ShuttleApplication";
 
+
+
     private boolean isUpgraded;
 
     private RefWatcher refWatcher;
 
-    public HashMap<String, UserSelectedArtwork> userSelectedArtwork = new HashMap<>();
+    private final HashMap<String, UserSelectedArtwork> userSelectedArtwork = new HashMap<>();
+
+    public UserSelectedArtwork getUserSelectedArtwork(String key) {
+        return userSelectedArtwork.get(key);
+    }
+
+    public void putUserSelectedArtwork(String key, UserSelectedArtwork artwork) {
+        userSelectedArtwork.put(key, artwork);
+    }
+
+    public Map<String, UserSelectedArtwork> getAllUserSelectedArtwork() {
+        return Collections.unmodifiableMap(userSelectedArtwork);
+    }
+
 
     private static Logger jaudioTaggerLogger1 = Logger.getLogger("org.jaudiotagger.audio");
     private static Logger jaudioTaggerLogger2 = Logger.getLogger("org.jaudiotagger");
@@ -106,7 +121,7 @@ public class ShuttleApplication extends DaggerApplication {
         RxDogTag.install();
 
         if (BuildConfig.DEBUG) {
-            // enableStrictMode();
+
         }
 
         refWatcher = LeakCanary.install(this);
@@ -218,6 +233,8 @@ public class ShuttleApplication extends DaggerApplication {
         try {
             return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
         } catch (PackageManager.NameNotFoundException | NullPointerException ignored) {
+
+            // Ignored: default value "unknown" will be returned.
 
         }
         return "unknown";

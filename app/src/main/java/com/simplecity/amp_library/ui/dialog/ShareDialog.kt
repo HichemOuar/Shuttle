@@ -59,14 +59,7 @@ class ShareDialog : DialogFragment() {
                                             sendIntent.putExtra(Intent.EXTRA_STREAM, FileProvider.getUriForFile(context, context.applicationContext.packageName + ".provider", file))
                                             sendIntent.type = "image/jpeg"
                                         }
-                                    } catch (ignored: FileNotFoundException) {
-
-                                    } finally {
-                                        try {
-                                            fileOutputStream?.close()
-                                        } catch (ignored: IOException) {
-
-                                        }
+                                    } catch (ignored: FileNotFoundException)
                                     }
 
                                     sendIntent.action = Intent.ACTION_SEND
