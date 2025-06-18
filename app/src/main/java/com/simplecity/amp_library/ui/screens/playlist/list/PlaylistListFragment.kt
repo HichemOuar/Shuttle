@@ -36,8 +36,6 @@ class PlaylistListFragment :
 
     private var playlistClickListener: PlaylistClickListener? = null
 
-    private val refreshDisposable: Disposable? = null
-
     private val disposables = CompositeDisposable()
 
     @Inject lateinit var presenter: PlaylistListPresenter
@@ -88,9 +86,6 @@ class PlaylistListFragment :
 
     override fun onPause() {
         super.onPause()
-
-        refreshDisposable?.dispose()
-
         disposables.clear()
     }
 

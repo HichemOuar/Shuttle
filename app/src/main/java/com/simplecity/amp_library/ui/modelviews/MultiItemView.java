@@ -14,7 +14,7 @@ import com.simplecityapps.recycler_adapter.model.ViewModel;
 import com.simplecityapps.recycler_adapter.recyclerview.BaseViewHolder;
 import java.util.List;
 
-public abstract class MultiItemView<VH extends MultiItemView.ViewHolder, T> extends BaseSelectableViewModel<VH> {
+public abstract class MultiItemView<VH extends MultiItemView.ViewHolder> extends BaseSelectableViewModel<VH>
 
     @Override
     public int getLayoutResId() {
@@ -42,7 +42,7 @@ public abstract class MultiItemView<VH extends MultiItemView.ViewHolder, T> exte
         throw new IllegalStateException("getLayoutResId() invalid ViewType. Class: " + getClass().getSimpleName());
     }
 
-    public static class ViewHolder<T extends ViewModel> extends BaseViewHolder<T> {
+    public static class ViewHolder extends BaseViewHolder<ViewModel> {
 
         @BindView(R.id.line_one)
         public TextView lineOne;
